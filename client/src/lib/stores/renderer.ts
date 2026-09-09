@@ -16,7 +16,7 @@ export type RendererStatus =
   | { status: "failed"; error: string };
 
 /** Store for the wasm current status */
-export const wasm_status: Writable<RendererStatus> = writable({
+export const renderer: Writable<RendererStatus> = writable({
   status: "uninit",
 });
 
@@ -24,7 +24,7 @@ export const wasm_status: Writable<RendererStatus> = writable({
 export async function loadRenderer(canvas_id: string) {
   // A winit event loop can only be created once per page, and HMR will
   // happily call this twice.
-  const status: RendererStatus = get(wasm_status);
+  const status: RendererStatus = get(renderer);
   if (status.status != "uninit") return;
 
   console.log("Loading renderer...");
@@ -34,10 +34,10 @@ export async function loadRenderer(canvas_id: string) {
     await init({ module_or_path: response });
     console.log("Loaded renderer, starting engine");
     const handle = init_engine(canvas_id);
-    wasm_status.set({ status: "running", renderer: { handle } });
+    renderer.set({ status: "running", renderer: { handle } });
   } catch (e) {
     console.error("Failed to load renderer:", e);
-    wasm_status.set({
+    renderer.set({
       status: "failed",
       error: e instanceof Error ? e.message : String(e),
     });
@@ -61,7 +61,7 @@ async function fetchWithProgress(url: string): Promise<Response> {
       const { done, value } = await reader.read();
       if (done) return controller.close();
       loaded += value.byteLength;
-      wasm_status.set({ status: "loading", loaded, total });
+      renderer.set({ status: "loading", loaded, total });
       controller.enqueue(value);
     },
     cancel: (reason) => reader.cancel(reason),
@@ -72,3 +72,31 @@ async function fetchWithProgress(url: string): Promise<Response> {
     headers: { "content-type": "application/wasm" },
   });
 }
+
+renderer.subscribe((val) => {
+  /* Fixme: this is temp */
+  console.log("new status:", val.status);
+  if (val.status == "running") {
+    val.renderer.handle.new_construct(
+      "271f1e8a-c3e7-4d17-8f68-a135d11e542a",
+      1,
+      0,
+      0,
+      1,
+    );
+    val.renderer.handle.new_construct(
+      "5a12e257-0eac-4733-a5bc-a0829ae918fc",
+      1,
+      2,
+      0,
+      1,
+    );
+    val.renderer.handle.new_construct(
+      "5a12e257-0eac-4733-a5bc-a0829ae918fc",
+      2,
+      2,
+      0,
+      1,
+    );
+  }
+});

@@ -1,14 +1,17 @@
-mod message_handler;
+mod components;
+mod resources;
 mod scene;
+mod systems;
 
 pub fn run_bevy_engine(canvas_id: &str, receiver: crate::message::Receiver) {
     let selector = format!("#{}", canvas_id);
 
     bevy::prelude::App::new()
         .add_plugins(plugins(canvas_id))
-        .insert_non_send_resource(message_handler::MessageHandler::new(receiver))
-        .add_systems(bevy::app::Startup, scene::setup)
-        .add_systems(bevy::app::Update, message_handler::handle_messages)
+        .insert_non_send_resource(resources::MessageHandler::new(receiver))
+        .insert_resource(resources::BuildingIndex::new())
+        .add_systems(bevy::app::Startup, (scene::setup, systems::load_assets))
+        .add_systems(bevy::app::Update, systems::handle_messages)
         .run();
 }
 
@@ -30,6 +33,7 @@ fn plugins(canvas_id: &str) -> bevy::app::PluginGroupBuilder {
     /* Asset plugin loads assets from the web */
     let asset_plugin = bevy::prelude::AssetPlugin {
         file_path: "assets".into(),
+        meta_check: bevy::asset::AssetMetaCheck::Never,
         ..Default::default()
     };
 
