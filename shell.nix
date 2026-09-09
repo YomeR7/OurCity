@@ -13,6 +13,8 @@ pkgs.mkShell {
     pkgs.rustc
     pkgs.rustfmt
     pkgs.sea-orm-cli
+    pkgs.wasm-pack
+    pkgs.lld
     pkgs.python313
     pkgs.python313Packages.requests
     pkgs.nodejs

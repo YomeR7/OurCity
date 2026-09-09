@@ -1,0 +1,2 @@
+# Don't track .glb 3D models for now, but will need later
+*.glb
