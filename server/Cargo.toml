@@ -14,5 +14,5 @@ anyhow={workspace=true}
 sea-orm={workspace=true}
 regex={workspace=true}
 serde_json={workspace=true}
-api={workspace=true}
+api={workspace=true, features=["server"]}
 uuid={workspace=true}

@@ -1,7 +1,7 @@
 use std::{default, num::NonZeroU32};
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
-use sea_orm::{EntityTrait, sea_query::ArrayType::Uuid, sqlx::types::chrono};
+use sea_orm::{ActiveModelTrait, EntityTrait, sea_query::ArrayType::Uuid, sqlx::types::chrono};
 
 use crate::entities::construct;
 
@@ -10,6 +10,7 @@ pub fn register_api(
     router: axum::Router<std::sync::Arc<crate::state::State>>,
 ) -> axum::Router<std::sync::Arc<crate::state::State>> {
     let router = router.route("/api/get_our_city", axum::routing::get(get_our_city_handler));
+    let router = router.route("/api/ask_for_construct", axum::routing::post(ask_for_construct_handler));
     router
 }
 
@@ -128,7 +129,7 @@ pub async fn ask_for_construct_handler(
     axum::extract::Json(construct_requested): axum::extract::Json<api::client_request::ConstructRequest>,
 ) -> axum::response::Response {
     //TODO: Check inputs (check collision)
-    let response = "Coucou";
+
     //Insert new construct in db
     let construct = crate::entities::construct::ActiveModel {
         id: Default::default(),
@@ -158,9 +159,25 @@ pub async fn ask_for_construct_handler(
         votes: sea_orm::ActiveValue::Set(1),
     };
 
-    response.into_response()
+    match construct.insert(state.db_conn()).await {
+        Ok(_) => (),
+        Err(e) => {
+            tracing::warn!("Failed to insert construct {}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        }
+    }
+
+    api::server_response::OkNotOk::Ok.into_response()
 }
 
+pub async fn vote_for_construct_handler(
+    axum::extract::State(state): axum::extract::State<std::sync::Arc<crate::state::State>>,
+    axum::extract::Json(construct_requested): axum::extract::Json<api::client_request::ConstructRequest>,
+) -> axum::response::Response {
+    api::server_response::OkNotOk::Ok.into_response()
+}
+
+//helper func to convert i32 to NonZeroU32
 fn convert_i32_nonzerou32(val: i32) -> Result<NonZeroU32, String> {
     let c_val: u32 = match u32::try_from(val) {
         Ok(c_val) => c_val,
