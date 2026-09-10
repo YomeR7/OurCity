@@ -8,23 +8,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 api = { workspace = true }
-bevy = { version = "0.18.1", default-features = false, features = [
-    "bevy_winit",
-    "bevy_window",
-    "bevy_render",
-    "bevy_core_pipeline",
-    "bevy_asset",
-    "bevy_gltf",
-    "bevy_pbr",
-    "bevy_log",
-    "webgl2",
-] }
+bevy = { version = "0.18.1", default-features = false, features = ["3d"] }
 chrono = { workspace = true }
 console_error_panic_hook = "0.1.7"
 serde_json = { workspace = true }
 uuid = { workspace = true }
 wasm-bindgen = { workspace = true }
-
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os"]

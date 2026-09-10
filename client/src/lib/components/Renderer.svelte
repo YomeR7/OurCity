@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { wasm_status, loadRenderer } from "../stores/renderer";
+    import { renderer, loadRenderer } from "../stores/renderer";
 
     const canvas_id = "bevy-canvas";
 
@@ -12,7 +12,7 @@
 <div class="canvas-frame">
     <canvas id={canvas_id} tabindex="0"></canvas>
 
-    {#if wasm_status.status == "loading"}
+    {#if renderer.status == "loading"}
         <div class="veil" aria-live="polite">
             <p class="name">Our City</p>
 
@@ -27,7 +27,7 @@
                 {#if total}{seen} of {size} MB{:else}connecting{/if}
             </p>
         </div>
-    {:else if wasm_status.status == "failed"}
+    {:else if renderer.status == "failed"}
         <div class="veil" aria-live="polite">
             <p class="name">Our City</p>
 

@@ -13,6 +13,4 @@ pub fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         },
         Transform::from_xyz(4.0, 10.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-
-    commands.spawn(SceneRoot(assets.load(GltfAssetLabel::Scene(0).from_asset("house.glb"))));
 }
