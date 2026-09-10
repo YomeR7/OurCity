@@ -21,16 +21,23 @@ pub struct Size {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
 pub struct Building {
-    id: uuid::Uuid,
-    created_at: chrono::DateTime<chrono::Utc>,
-    kind: BuildingKind,
-    pos: Position,
-    size: Size,
+    pub id: uuid::Uuid,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub kind: BuildingKind,
+    pub pos: Position,
+    pub size: Size,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
-pub struct BuildingStatus {
-    cost: u32,
-    vote: u32,
+pub struct Construct {
+    pub building: Building,
+    pub status: ConstructStatus,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone)]
+pub struct ConstructStatus {
+    pub cost: u32,
+    pub vote: u32,
 }

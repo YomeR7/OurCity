@@ -15,8 +15,6 @@ pub struct Model {
     pub y: i32,
     pub width: i32,
     pub height: i32,
-    pub cost: i32,
-    pub votes: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

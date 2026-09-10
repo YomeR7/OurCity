@@ -3,5 +3,6 @@
 //! To regenerate, run `sea-orm-cli generate entity -u "$DATABASE_URL" -o ./src/entities --with-serde both`
 
 pub mod building;
-pub mod built;
+pub mod construct;
+pub mod convert;
 pub mod sea_orm_active_enums;

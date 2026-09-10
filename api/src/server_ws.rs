@@ -4,7 +4,7 @@ use crate::common;
 #[derive(Clone)]
 pub struct BuildingAsked {
     building: common::Building,
-    status: common::BuildingStatus,
+    status: common::ConstructStatus,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -17,7 +17,7 @@ pub struct BuildingConfirmed {
 #[derive(Clone)]
 pub struct BuildingStatusUpdated {
     id: uuid::Uuid,
-    status: common::BuildingStatus,
+    status: common::ConstructStatus,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]

@@ -1,8 +1,7 @@
-use crate::common::Building;
-
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct GetOurCityResponse {
-    building_list: Vec<Building>,
+    pub buildings: Vec<crate::common::Building>,
+    pub constructs: Vec<crate::common::Construct>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
