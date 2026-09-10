@@ -2,27 +2,27 @@ use crate::common;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
-pub struct BuildingAsked {
-    building: common::Building,
-    status: common::ConstructStatus,
+pub struct NewConstruct {
+    pub building: common::Building,
+    pub status: common::ConstructStatus,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
-pub struct BuildingConfirmed {
-    building: common::Building,
+pub struct BuildingBuilt {
+    pub id: uuid::Uuid,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
-pub struct BuildingStatusUpdated {
-    id: uuid::Uuid,
-    status: common::ConstructStatus,
+pub struct ConstructStatusUpdated {
+    pub id: uuid::Uuid,
+    pub status: common::ConstructStatus,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
 pub enum ServerEvent {
-    BuildingAsked(BuildingAsked),
-    BuildingConfirmed(BuildingConfirmed),
-    BuildingStatusUpdated(BuildingStatusUpdated),
+    NewConstruct(NewConstruct),
+    BuildingBuilt(BuildingBuilt),
+    ConstructStatusUpdated(ConstructStatusUpdated),
 }

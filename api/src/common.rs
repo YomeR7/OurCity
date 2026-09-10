@@ -6,6 +6,13 @@ pub enum BuildingKind {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
+pub enum UpVoteDownVote {
+    UpVote,
+    DownVote,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -39,5 +46,5 @@ pub struct Construct {
 #[derive(Clone)]
 pub struct ConstructStatus {
     pub cost: u32,
-    pub vote: u32,
+    pub vote: i32,
 }

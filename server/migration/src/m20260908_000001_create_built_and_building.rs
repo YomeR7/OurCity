@@ -136,12 +136,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .check(Expr::col(Construct::Cost).gt(0)),
                     )
-                    .col(
-                        ColumnDef::new(Construct::Votes)
-                            .integer()
-                            .not_null()
-                            .check(Expr::col(Construct::Votes).gt(0)),
-                    )
+                    .col(ColumnDef::new(Construct::Votes).integer().not_null())
                     .to_owned(),
             )
             .await?;
