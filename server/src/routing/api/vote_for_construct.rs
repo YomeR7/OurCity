@@ -100,7 +100,7 @@ pub async fn vote_for_construct_handler(
                         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
                     }
                 },
-                vote: construct_votes,
+                vote: new_vote_count,
             },
         })
     };
