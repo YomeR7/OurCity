@@ -1,18 +1,28 @@
+#[derive(Debug)]
 pub enum Message {
-    NewConstruct {
+    AskConstructionPlacement {
+        response: futures::channel::oneshot::Sender<Result<crate::api::ConstructPlacement, String>>,
+    },
+    ConstructCancelled {
         id: uuid::Uuid,
-        x: i32,
-        y: i32,
-        votes: u32,
-        cost: u32,
     },
     ConstructConfirmed {
         id: uuid::Uuid,
     },
     ConstructStatusUpdated {
-        votes: u32,
-        cost: u32,
+        id: uuid::Uuid,
+        status: api::common::ConstructStatus,
     },
+    LoadCity {
+        city: api::server_response::GetOurCityResponse,
+    },
+    NewConstruct {
+        construct: api::common::Construct,
+    },
+    StartConstructPlacement {
+        kind: String,
+    },
+    StopConstructPlacement,
 }
 
 pub type Sender = std::sync::mpsc::Sender<Message>;
