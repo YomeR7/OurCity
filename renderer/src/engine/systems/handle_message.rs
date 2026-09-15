@@ -1,174 +1,160 @@
 use crate::engine::components;
-use crate::engine::observers;
 use crate::engine::resources;
+use crate::engine::systems;
+use bevy::prelude::*;
 
-/// Handle a message from JS and update the game engine state accordingly
-pub fn handle_message(
-    message: crate::message::Message,
-    models: &resources::BuildingAssets,
-    commands: &mut bevy::prelude::Commands,
-    building_map: &mut resources::BuildingIndex,
-    ghost_query: &bevy::prelude::Query<(bevy::prelude::Entity, &components::building::BuildingGhost)>,
-    construct_query: &mut bevy::prelude::Query<&mut components::construct::Construct>,
-) {
-    match message {
-        crate::message::Message::LoadCity { city } => spawn_city(city, models, commands, building_map),
-        crate::message::Message::NewConstruct { construct } => spawn_construct(construct, models, commands, building_map),
-        crate::message::Message::StartConstructPlacement { kind } => spawn_building_ghost(&kind, models, commands),
-        crate::message::Message::StopConstructPlacement => despawn_building_ghost(commands, ghost_query),
-        crate::message::Message::AskConstructionPlacement { response } => get_building_ghost_position(response, ghost_query),
-        crate::message::Message::ConstructStatusUpdated { id, status } => {
-            update_construct_status(id, status, building_map, construct_query)
-        }
-        crate::message::Message::ConstructCancelled { id } => dispawn_construct(id, building_map, commands),
-        crate::message::Message::ConstructConfirmed { id } => {
-            /* Fixme: refactor, + if this is the selected construct we need to deselect */
-            let construct_entity = match building_map.get_construct(&id) {
-                Some(entity) => entity,
-                None => return,
-            };
-            let building = match construct_query.get(construct_entity) {
-                Ok(construct) => construct.building.clone(),
-                Err(_) => return,
-            };
-            dispawn_construct(id, building_map, commands);
-            spawn_building(building, models, commands, building_map);
+#[derive(bevy::ecs::system::SystemParam)]
+pub struct MessageHandlerParams<'w, 's> {
+    /// Commands to spawn / despawn entities
+    commands: Commands<'w, 's>,
+
+    /// Resource holding all the 3D models used
+    assets: Res<'w, resources::BuildingAssets>,
+    /// Resource holding the message handler
+    handler: NonSendMut<'w, resources::MessageHandler>,
+    /// Resource holding the building map
+    building_map: ResMut<'w, resources::BuildingIndex>,
+
+    /// Query to all the ghost buildings
+    ghost_query: Query<'w, 's, (Entity, &'static components::building::BuildingGhost)>,
+    /// Query to all the constructs buildings
+    construct_query: Query<'w, 's, &'static mut components::construct::Construct>,
+}
+
+/// System to drain the message handler and handle all the messages.
+pub fn handle_messages(mut params: MessageHandlerParams) {
+    use crate::message::Message;
+
+    /* Drain all pending messages */
+    loop {
+        match params.handler.recv() {
+            Ok(Message::AskConstructPlacement { response }) => get_ghost_position(&mut params, response),
+            Ok(Message::ConstructCancelled { id }) => dispawn_construct(&mut params, &id),
+            Ok(Message::ConstructConfirmed { id }) => construct_confirmed(&mut params, &id),
+            Ok(Message::ConstructStatusUpdated { id, status }) => update_construct_status(&mut params, &id, status),
+            Ok(Message::LoadCity { city }) => spawn_city(&mut params, city),
+            Ok(Message::NewConstruct { construct }) => spawn_construct(&mut params, construct),
+            Ok(Message::StartConstructPlacement { kind }) => spawn_building_ghost(&mut params, &kind),
+            Ok(Message::StopConstructPlacement) => despawn_building_ghost(&mut params),
+            Err(std::sync::mpsc::TryRecvError::Empty) => break,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                if params.handler.disconnected_sent() {
+                    bevy::log::tracing::warn!("Bevy com channel disconnected!");
+                }
+                break;
+            }
         }
     }
 }
 
 /// Spawn an entire city into the engine
-fn spawn_city(
-    city: api::server_response::GetOurCityResponse,
-    models: &resources::BuildingAssets,
-    commands: &mut bevy::prelude::Commands,
-    building_map: &mut resources::BuildingIndex,
-) {
+fn spawn_city(params: &mut MessageHandlerParams, city: api::server_response::GetOurCityResponse) {
     let api::server_response::GetOurCityResponse { buildings, constructs } = city;
     for building in buildings.into_iter() {
-        spawn_building(building, models, commands, building_map);
+        spawn_building(params, building);
     }
     for construct in constructs.into_iter() {
-        spawn_construct(construct, models, commands, building_map);
+        spawn_construct(params, construct);
     }
 }
 
 /// Spawn a new building in the engine
-fn spawn_building(
-    building: api::common::Building,
-    models: &resources::BuildingAssets,
-    commands: &mut bevy::prelude::Commands,
-    building_map: &mut resources::BuildingIndex,
-) {
+fn spawn_building(params: &mut MessageHandlerParams, building: api::common::Building) {
     /* Create the components for the building */
     let id = building.id;
     let position = components::grid::GridPos {
         x: building.pos.x,
         y: building.pos.y,
     };
-    let transform = bevy::prelude::Transform::from_translation(position.world());
-    let mesh = bevy::prelude::SceneRoot(models.house.clone());
-    let building_component = components::building::Building { building };
+    let transform = Transform::from_translation(position.world());
+    let mesh = SceneRoot(params.assets.house.clone());
+    let building_component = components::building::Building::new(building);
 
     /* Insert the entity in Bevy ECS */
-    let entity = commands
+    let entity = params
+        .commands
         .spawn((position, transform, mesh, building_component))
-        .observe(observers::on_building_clicked)
+        .observe(systems::on_building_clicked)
         .id();
 
     /* Store the entity in the id map */
-    building_map.insert_building(id, entity);
+    params.building_map.insert_building(id, entity);
 }
 
 /// Spawn a new construct in the engine
-fn spawn_construct(
-    construct: api::common::Construct,
-    models: &resources::BuildingAssets,
-    commands: &mut bevy::prelude::Commands,
-    building_map: &mut resources::BuildingIndex,
-) {
+fn spawn_construct(params: &mut MessageHandlerParams, construct: api::common::Construct) {
     /* Create the components for the building */
     let id = construct.building.id;
     let position = components::grid::GridPos {
         x: construct.building.pos.x,
         y: construct.building.pos.y,
     };
-    let transform = bevy::prelude::Transform::from_translation(position.world());
-    let mesh = bevy::prelude::SceneRoot(models.house_construct.clone());
-    let construct_component = components::construct::Construct {
-        building: construct.building,
-        status: construct.status,
-    };
+    let transform = Transform::from_translation(position.world());
+    let mesh = SceneRoot(params.assets.house_construct.clone());
+    let construct_component = components::construct::Construct::new(construct);
 
     /* Insert the entity in Bevy ECS */
-    let entity = commands
+    let entity = params
+        .commands
         .spawn((position, transform, mesh, construct_component))
-        .observe(observers::on_construct_clicked)
+        .observe(systems::on_construct_clicked)
         .id();
 
     /* Store the entity in the id map */
-    building_map.insert_construct(id, entity);
+    params.building_map.insert_construct(id, entity);
 }
 
 /// Spawn a new construct in the engine
-fn update_construct_status(
-    construct: uuid::Uuid,
-    status: api::common::ConstructStatus,
-    building_map: &resources::BuildingIndex,
-    construct_query: &mut bevy::prelude::Query<(&mut components::construct::Construct)>,
-) {
-    let construct_entity = match building_map.get_construct(&construct) {
+fn update_construct_status(params: &mut MessageHandlerParams, construct: &uuid::Uuid, status: api::common::ConstructStatus) {
+    let construct_entity = match params.building_map.get_construct(construct) {
         Some(entity) => entity,
         None => return,
     };
-    let mut construct = match construct_query.get_mut(construct_entity) {
+    let mut construct = match params.construct_query.get_mut(construct_entity) {
         Ok(construct) => construct,
         Err(_) => return,
     };
 
-    (&mut *construct).status = status;
+    construct.update_status(status);
 }
 
 /// Dispawn the given construct
-fn dispawn_construct(construct: uuid::Uuid, building_map: &resources::BuildingIndex, commands: &mut bevy::prelude::Commands) {
-    let construct_entity = match building_map.get_construct(&construct) {
+fn dispawn_construct(params: &mut MessageHandlerParams, construct: &uuid::Uuid) {
+    let construct_entity = match params.building_map.get_construct(construct) {
         Some(entity) => entity,
         None => return,
     };
-    let mut construct_entity = match commands.get_entity(construct_entity) {
+    let mut construct_entity = match params.commands.get_entity(construct_entity) {
         Ok(construct) => construct,
         Err(_) => return,
     };
     construct_entity.despawn();
 }
 
-/// Spawn a ghost building template for construction indication
-fn spawn_building_ghost(building_kind: &str, models: &resources::BuildingAssets, commands: &mut bevy::prelude::Commands) {
+/// Spawn a ghost building template for construct indication
+fn spawn_building_ghost(params: &mut MessageHandlerParams, building_kind: &str) {
     /* Create the components for the building */
-    let transform = bevy::prelude::Transform::IDENTITY;
-    let mesh = bevy::prelude::SceneRoot(models.house.clone());
+    let transform = Transform::IDENTITY;
+    let mesh = SceneRoot(params.assets.house.clone());
     let ghost = components::building::BuildingGhost { position: None };
 
     /* Insert the entity in Bevy ECS */
-    commands.spawn((transform, mesh, ghost));
+    params.commands.spawn((transform, mesh, ghost));
 }
 
 /// Despawn all ghost building templates
-fn despawn_building_ghost(
-    commands: &mut bevy::prelude::Commands,
-    ghost_query: &bevy::prelude::Query<(bevy::prelude::Entity, &components::building::BuildingGhost)>,
-) {
-    for (entity, _) in ghost_query {
-        commands.entity(entity).despawn();
+fn despawn_building_ghost(params: &mut MessageHandlerParams) {
+    for (entity, _) in params.ghost_query {
+        params.commands.entity(entity).despawn();
     }
 }
 
 /// Get the ghost building position and return it to the sender
-fn get_building_ghost_position(
+fn get_ghost_position(
+    params: &MessageHandlerParams,
     sender: futures::channel::oneshot::Sender<Result<crate::api::ConstructPlacement, String>>,
-    ghost_query: &bevy::prelude::Query<(bevy::prelude::Entity, &components::building::BuildingGhost)>,
 ) {
-    let ghost_components = ghost_query.iter().map(|(_, g)| g).collect::<Vec<_>>();
+    let ghost_components = params.ghost_query.iter().map(|(_, g)| g).collect::<Vec<_>>();
     let message = match ghost_components.as_slice() {
         [] => Err(format!("No ghost building to provide placement!")),
         [ghost] => match &ghost.position {
@@ -183,4 +169,18 @@ fn get_building_ghost_position(
         _ => Err(format!("Multiple ghost building found!")),
     };
     if let Err(e) = sender.send(message) {}
+}
+
+fn construct_confirmed(params: &mut MessageHandlerParams, construct: &uuid::Uuid) {
+    /* Fixme: if this is the selected construct, select the building ? */
+    let construct_entity = match params.building_map.get_construct(construct) {
+        Some(entity) => entity,
+        None => return,
+    };
+    let building = match params.construct_query.get(construct_entity) {
+        Ok(construct) => construct.building(),
+        Err(_) => return,
+    };
+    dispawn_construct(params, construct);
+    spawn_building(params, building);
 }

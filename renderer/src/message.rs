@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum Message {
-    AskConstructionPlacement {
+    AskConstructPlacement {
         response: futures::channel::oneshot::Sender<Result<crate::api::ConstructPlacement, String>>,
     },
     ConstructCancelled {

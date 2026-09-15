@@ -1,28 +1,33 @@
-use crate::common;
-
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone)]
 pub struct NewConstruct {
-    pub building: common::Building,
-    pub status: common::ConstructStatus,
+    pub construct: crate::common::Construct,
 }
 
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone)]
+pub struct ConstructCancelled {
+    pub id: uuid::Uuid,
+}
+
+#[derive(Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct BuildingBuilt {
     pub id: uuid::Uuid,
 }
 
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone)]
 pub struct ConstructStatusUpdated {
     pub id: uuid::Uuid,
-    pub status: common::ConstructStatus,
+    pub status: crate::common::ConstructStatus,
 }
+
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone)]
 pub enum ServerEvent {
     NewConstruct(NewConstruct),
+    ConstructCancelled(ConstructCancelled),
     BuildingBuilt(BuildingBuilt),
     ConstructStatusUpdated(ConstructStatusUpdated),
 }

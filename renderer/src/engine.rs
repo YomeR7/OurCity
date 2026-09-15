@@ -1,6 +1,5 @@
 mod components;
 mod entity;
-mod observers;
 mod resources;
 mod scene;
 mod systems;
@@ -10,10 +9,6 @@ pub fn run_bevy_engine(canvas_id: &str, receiver: crate::message::Receiver) {
 
     let selector = format!("#{}", canvas_id);
 
-    let deselect_system = systems::deselect_on_miss.run_if(bevy::input::common_conditions::input_just_pressed(
-        bevy::prelude::MouseButton::Left,
-    ));
-
     bevy::prelude::App::new()
         .add_plugins(plugins(canvas_id))
         .insert_non_send_resource(resources::MessageHandler::new(receiver))
@@ -21,13 +16,16 @@ pub fn run_bevy_engine(canvas_id: &str, receiver: crate::message::Receiver) {
         .add_systems(bevy::app::Startup, (scene::setup, systems::load_assets))
         .add_systems(bevy::app::Update, systems::handle_messages)
         .add_systems(bevy::app::Update, systems::camera_controller)
-        .add_systems(bevy::app::Update, systems::update_construction_ghost)
-        .add_systems(bevy::app::Update, systems::update_construction_panel_timer)
+        .add_systems(bevy::app::Update, systems::update_construct_ghost)
+        .add_systems(bevy::app::Update, systems::update_construct_panel_timer)
         .add_systems(bevy::app::Update, systems::update_building_panel_info)
         .add_systems(bevy::app::Update, systems::construct_panel_buttons_handler)
-        .add_systems(bevy::app::Update, deselect_system)
+        .add_systems(bevy::app::Update, systems::on_building_selected)
+        .add_systems(bevy::app::Update, systems::on_construct_selected)
         .add_systems(bevy::app::PostUpdate, systems::update_construct_panel_position)
         .add_systems(bevy::app::PostUpdate, systems::update_building_panel_position)
+        .add_observer(systems::on_building_deselected)
+        .add_observer(systems::on_construct_deselected)
         .run();
 }
 

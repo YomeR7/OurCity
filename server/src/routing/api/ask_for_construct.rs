@@ -48,40 +48,42 @@ pub async fn ask_for_construct_handler(
 
     // Websocket
     state.broadcast(api::server_ws::ServerEvent::NewConstruct(api::server_ws::NewConstruct {
-        building: api::common::Building {
-            id: new_construct.id,
-            created_at: new_construct.created_at.into(),
-            kind: new_construct.kind.into(),
-            pos: api::common::Position {
-                x: new_construct.x,
-                y: new_construct.y,
+        construct: api::common::Construct {
+            building: api::common::Building {
+                id: new_construct.id,
+                created_at: new_construct.created_at.into(),
+                kind: new_construct.kind.into(),
+                pos: api::common::Position {
+                    x: new_construct.x,
+                    y: new_construct.y,
+                },
+                size: api::common::Size {
+                    width: match api_utils::convert_i32_nonzerou32(new_construct.width) {
+                        Ok(width) => width,
+                        Err(e) => {
+                            tracing::warn!(e);
+                            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+                        }
+                    },
+                    height: match api_utils::convert_i32_nonzerou32(new_construct.height) {
+                        Ok(width) => width,
+                        Err(e) => {
+                            tracing::warn!(e);
+                            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+                        }
+                    },
+                },
             },
-            size: api::common::Size {
-                width: match api_utils::convert_i32_nonzerou32(new_construct.width) {
-                    Ok(width) => width,
+            status: api::common::ConstructStatus {
+                cost: match u32::try_from(new_construct.cost) {
+                    Ok(c_val) => c_val,
                     Err(e) => {
-                        tracing::warn!(e);
+                        tracing::warn!("Failed convert i32 to u32 {}", e);
                         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
                     }
                 },
-                height: match api_utils::convert_i32_nonzerou32(new_construct.height) {
-                    Ok(width) => width,
-                    Err(e) => {
-                        tracing::warn!(e);
-                        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-                    }
-                },
+                votes: new_construct.votes,
             },
-        },
-        status: api::common::ConstructStatus {
-            cost: match u32::try_from(new_construct.cost) {
-                Ok(c_val) => c_val,
-                Err(e) => {
-                    tracing::warn!("Failed convert i32 to u32 {}", e);
-                    return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
-                }
-            },
-            vote: new_construct.votes,
         },
     }));
 

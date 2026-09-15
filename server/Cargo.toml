@@ -4,15 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum={workspace=true}
-axum-server={workspace=true}
-serde={workspace=true}
-tokio={workspace=true}
-tracing={workspace=true}
-tracing-subscriber={workspace=true}
-anyhow={workspace=true}
-sea-orm={workspace=true}
-regex={workspace=true}
-serde_json={workspace=true}
-api={workspace=true, features=["server"]}
-uuid={workspace=true}
+anyhow = "1.0.104"
+api = { workspace = true, features = ["server"] }
+axum = { workspace = true }
+axum-server = { version = "0.7.3", features = ["tls-rustls-no-provider"] }
+axum-extra = { version = "0.12.5", features = ["cookie"] }
+regex = { workspace = true }
+sea-orm = { version = "1.1.19", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "time"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }

@@ -60,11 +60,11 @@ impl EngineHandle {
         Ok(())
     }
 
-    /// Ask the engine for the current construction placement,
-    /// or None if the engine is not currently handling a construction placement.
-    pub async fn ask_construction_position(&mut self) -> Result<ConstructPlacement, wasm_bindgen::JsError> {
+    /// Ask the engine for the current construct placement,
+    /// or None if the engine is not currently handling a construct placement.
+    pub async fn ask_construct_position(&mut self) -> Result<ConstructPlacement, wasm_bindgen::JsError> {
         let (sender, receiver) = futures::channel::oneshot::channel();
-        let message = crate::message::Message::AskConstructionPlacement { response: sender };
+        let message = crate::message::Message::AskConstructPlacement { response: sender };
         self.sender.send(message)?;
         let response = receiver.await?.map_err(|e| wasm_bindgen::JsError::new(&e))?;
         Ok(response)

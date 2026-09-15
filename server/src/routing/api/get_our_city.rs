@@ -88,7 +88,7 @@ pub async fn get_our_city_handler(
                         return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
                     }
                 },
-                vote: construct.votes,
+                votes: construct.votes,
             },
         })
     }

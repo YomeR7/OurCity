@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { renderer, loadRenderer } from "../stores/renderer";
+    import { renderer, loadRenderer } from "../lib/renderer";
 
     const canvas_id = "bevy-canvas";
 

@@ -2,6 +2,7 @@ import { writable, get, type Writable } from "svelte/store";
 import type { EngineHandle } from "../renderer/renderer.js";
 import init, { init_engine } from "../renderer/renderer.js";
 import wasmUrl from "../renderer/renderer_bg.wasm?url";
+import { loadCity } from "./city.js";
 
 /** Interface to the renderer wasm module */
 export interface Renderer {
@@ -18,6 +19,13 @@ export type RendererStatus =
 /** Store for the wasm current status */
 export const renderer: Writable<RendererStatus> = writable({
   status: "uninit",
+});
+
+renderer.subscribe((val) => {
+  /* When the renderer is loaded, ask for the city */
+  if (val.status == "running") {
+    loadCity(val.renderer.handle);
+  }
 });
 
 /** Ask for the wasm module and update the wasm status store accordingly */
@@ -72,31 +80,3 @@ async function fetchWithProgress(url: string): Promise<Response> {
     headers: { "content-type": "application/wasm" },
   });
 }
-
-renderer.subscribe((val) => {
-  /* Fixme: this is temp */
-  console.log("new status:", val.status);
-  if (val.status == "running") {
-    val.renderer.handle.new_construct(
-      "271f1e8a-c3e7-4d17-8f68-a135d11e542a",
-      1,
-      0,
-      0,
-      1,
-    );
-    val.renderer.handle.new_construct(
-      "5a12e257-0eac-4733-a5bc-a0829ae918fc",
-      1,
-      2,
-      0,
-      1,
-    );
-    val.renderer.handle.new_construct(
-      "5a12e257-0eac-4733-a5bc-a0829ae918fc",
-      2,
-      2,
-      0,
-      1,
-    );
-  }
-});

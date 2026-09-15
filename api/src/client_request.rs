@@ -1,6 +1,8 @@
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct GetOurCityRequest;
 
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct ConstructRequest {
     pub kind: crate::common::BuildingKind,
@@ -8,6 +10,7 @@ pub struct ConstructRequest {
     pub size: crate::common::Size,
 }
 
+#[derive(Debug, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct VoteForConstruct {
     pub id: uuid::Uuid,
